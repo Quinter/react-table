@@ -38,6 +38,7 @@ const propTypes = {
 }
 
 export const useGroupBy = hooks => {
+  hooks.getGroupByToggleProps = []
   hooks.columnsBeforeHeaderGroups.push(columnsBeforeHeaderGroups)
   hooks.columnsBeforeHeaderGroupsDeps.push((deps, instance) => {
     deps.push(instance.state.groupBy)
@@ -123,29 +124,35 @@ function useMain(instance) {
     }, actions.toggleGroupBy)
   }
 
-  hooks.getGroupByToggleProps = []
-
-  flatHeaders.forEach(header => {
-    const { canGroupBy } = header
-    header.getGroupByToggleProps = props => {
-      return mergeProps(
-        {
-          onClick: canGroupBy
-            ? e => {
-                e.persist()
-                header.toggleGroupBy()
-              }
-            : undefined,
-          style: {
-            cursor: canGroupBy ? 'pointer' : undefined,
-          },
-          title: 'Toggle GroupBy',
-        },
-        applyPropHooks(instance.hooks.getGroupByToggleProps, header, instance),
-        props
+  flatHeaders.forEach(
+    // avoid sharing instance in contexts of other functions
+    (instance => header => {
+      const { canGroupBy } = header
+      const groupByTogglePropsFromHooks = applyPropHooks(
+        instance.hooks.getGroupByToggleProps,
+        header,
+        instance
       )
-    }
-  })
+      header.getGroupByToggleProps = props => {
+        return mergeProps(
+          {
+            onClick: canGroupBy
+              ? e => {
+                  e.persist()
+                  header.toggleGroupBy()
+                }
+              : undefined,
+            style: {
+              cursor: canGroupBy ? 'pointer' : undefined,
+            },
+            title: 'Toggle GroupBy',
+          },
+          groupByTogglePropsFromHooks,
+          props
+        )
+      }
+    })(instance)
+  )
 
   hooks.prepareRow.push(row => {
     row.cells.forEach(cell => {

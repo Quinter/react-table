@@ -41,6 +41,8 @@ const propTypes = {
 
 export const useSortBy = hooks => {
   hooks.useMain.push(useMain)
+  // Add custom hooks
+  hooks.getSortByToggleProps = []
 }
 
 useSortBy.pluginName = 'useSortBy'
@@ -62,15 +64,12 @@ function useMain(instance) {
     isMultiSortEvent = e => e.shiftKey,
     maxMultiSortColCount = Number.MAX_SAFE_INTEGER,
     flatHeaders,
-    hooks,
     state: { sortBy },
     setState,
     plugins,
   } = instance
 
   ensurePluginOrder(plugins, ['useFilters'], 'useSortBy', [])
-  // Add custom hooks
-  hooks.getSortByToggleProps = []
 
   // Updates sorting based on a columnID, desc flag and multi flag
   const toggleSortBy = (columnID, desc, multi) => {
@@ -161,62 +160,70 @@ function useMain(instance) {
   }
 
   // Add the getSortByToggleProps method to columns and headers
-  flatHeaders.forEach(column => {
-    const { accessor, disableSorting: columnDisableSorting, id } = column
+  flatHeaders.forEach(
+    // avoid sharing instance in contexts of other functions
+    (instance => column => {
+      const { accessor, disableSorting: columnDisableSorting, id } = column
 
-    const canSort = accessor
-      ? getFirstDefined(
-          columnDisableSorting === true ? false : undefined,
-          disableSorting === true ? false : undefined,
-          true
-        )
-      : false
+      const canSort = accessor
+        ? getFirstDefined(
+            columnDisableSorting === true ? false : undefined,
+            disableSorting === true ? false : undefined,
+            true
+          )
+        : false
 
-    column.canSort = canSort
+      column.canSort = canSort
 
-    if (column.canSort) {
-      column.toggleSortBy = (desc, multi) =>
-        toggleSortBy(column.id, desc, multi)
+      if (column.canSort) {
+        column.toggleSortBy = (desc, multi) =>
+          toggleSortBy(column.id, desc, multi)
 
-      column.clearSorting = () => {
-        return setState(old => {
-          const { sortBy } = old
-          const newSortBy = sortBy.filter(d => d.id !== column.id)
-          return {
-            ...old,
-            sortBy: newSortBy,
-          }
-        }, actions.sortByChange)
+        column.clearSorting = () => {
+          return setState(old => {
+            const { sortBy } = old
+            const newSortBy = sortBy.filter(d => d.id !== column.id)
+            return {
+              ...old,
+              sortBy: newSortBy,
+            }
+          }, actions.sortByChange)
+        }
       }
-    }
 
-    column.getSortByToggleProps = props => {
-      return mergeProps(
-        {
-          onClick: canSort
-            ? e => {
-                e.persist()
-                column.toggleSortBy(
-                  undefined,
-                  !instance.disableMultiSort && isMultiSortEvent(e)
-                )
-              }
-            : undefined,
-          style: {
-            cursor: canSort ? 'pointer' : undefined,
-          },
-          title: 'Toggle SortBy',
-        },
-        applyPropHooks(instance.hooks.getSortByToggleProps, column, instance),
-        props
+      const sortByTogglePropsFromHooks = applyPropHooks(
+        instance.hooks.getSortByToggleProps,
+        column,
+        instance
       )
-    }
+      column.getSortByToggleProps = props => {
+        return mergeProps(
+          {
+            onClick: canSort
+              ? e => {
+                  e.persist()
+                  column.toggleSortBy(
+                    undefined,
+                    !disableMultiSort && isMultiSortEvent(e)
+                  )
+                }
+              : undefined,
+            style: {
+              cursor: canSort ? 'pointer' : undefined,
+            },
+            title: 'Toggle SortBy',
+          },
+          sortByTogglePropsFromHooks,
+          props
+        )
+      }
 
-    const columnSort = sortBy.find(d => d.id === id)
-    column.isSorted = !!columnSort
-    column.sortedIndex = sortBy.findIndex(d => d.id === id)
-    column.isSortedDesc = column.isSorted ? columnSort.desc : undefined
-  })
+      const columnSort = sortBy.find(d => d.id === id)
+      column.isSorted = !!columnSort
+      column.sortedIndex = sortBy.findIndex(d => d.id === id)
+      column.isSortedDesc = column.isSorted ? columnSort.desc : undefined
+    })(instance)
+  )
 
   const sortedRows = React.useMemo(() => {
     if (manualSorting || !sortBy.length) {

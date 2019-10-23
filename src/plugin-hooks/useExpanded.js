@@ -58,8 +58,13 @@ function useMain(instance) {
     }, actions.toggleExpanded)
   }
 
-  hooks.prepareRow.push(row => {
+  hooks.prepareRow.push((row, instance) => {
     row.toggleExpanded = set => toggleExpandedByPath(row.path, set)
+    const propsFromHooks = applyPropHooks(
+      instance.hooks.getExpandedToggleProps,
+      row,
+      instance
+    )
     row.getExpandedToggleProps = props => {
       return mergeProps(
         {
@@ -72,7 +77,7 @@ function useMain(instance) {
           },
           title: 'Toggle Expanded',
         },
-        applyPropHooks(instance.hooks.getExpandedToggleProps, row, instance),
+        propsFromHooks,
         props
       )
     }

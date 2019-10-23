@@ -178,6 +178,10 @@ function useMain(instance) {
     }, actions.toggleRowSelected)
   }
 
+  const toggleAllRowsSelectedPropsFromHooks = applyPropHooks(
+    instance.hooks.getToggleAllRowsSelectedProps,
+    instance
+  )
   const getToggleAllRowsSelectedProps = props => {
     return mergeProps(
       {
@@ -190,12 +194,17 @@ function useMain(instance) {
         checked: isAllRowsSelected,
         title: 'Toggle All Rows Selected',
       },
-      applyPropHooks(instance.hooks.getToggleAllRowsSelectedProps, instance),
+      toggleAllRowsSelectedPropsFromHooks,
       props
     )
   }
 
-  hooks.prepareRow.push(row => {
+  hooks.prepareRow.push((row, instance) => {
+    const toggleRowSelectedPropsFromHooks = applyPropHooks(
+      instance.hooks.getToggleRowSelectedProps,
+      row,
+      instance
+    )
     // Aggregate rows have entirely different select logic
     if (row.isAggregated) {
       const subRowPaths = row.subRows.map(row => row.path)
@@ -225,11 +234,7 @@ function useMain(instance) {
             checked,
             title: 'Toggle Row Selected',
           },
-          applyPropHooks(
-            instance.hooks.getToggleRowSelectedProps,
-            row,
-            instance
-          ),
+          toggleRowSelectedPropsFromHooks,
           props
         )
       }
@@ -255,11 +260,7 @@ function useMain(instance) {
             checked,
             title: 'Toggle Row Selected',
           },
-          applyPropHooks(
-            instance.hooks.getToggleRowSelectedProps,
-            row,
-            instance
-          ),
+          toggleRowSelectedPropsFromHooks,
           props
         )
       }

@@ -15,6 +15,7 @@ defaultColumn.canResize = true
 const propTypes = {}
 
 export const useResizeColumns = hooks => {
+  hooks.getResizerProps = []
   hooks.useBeforeDimensions.push(useBeforeDimensions)
 }
 
@@ -22,8 +23,6 @@ useResizeColumns.pluginName = 'useResizeColumns'
 
 const useBeforeDimensions = instance => {
   PropTypes.checkPropTypes(propTypes, instance, 'property', 'useResizeColumns')
-
-  instance.hooks.getResizerProps = []
 
   const {
     flatHeaders,
@@ -99,33 +98,40 @@ const useBeforeDimensions = instance => {
     }))
   }
 
-  flatHeaders.forEach(header => {
-    const canResize = getFirstDefined(
-      header.disableResizing === true ? false : undefined,
-      disableResizing === true ? false : undefined,
-      true
-    )
+  flatHeaders.forEach(
+    (instance => header => {
+      const canResize = getFirstDefined(
+        header.disableResizing === true ? false : undefined,
+        disableResizing === true ? false : undefined,
+        true
+      )
 
-    header.canResize = canResize
-    header.width = columnResizing.columnWidths[header.id] || header.width
-    header.isResizing = columnResizing.isResizingColumn === header.id
+      header.canResize = canResize
+      header.width = columnResizing.columnWidths[header.id] || header.width
+      header.isResizing = columnResizing.isResizingColumn === header.id
 
-    if (canResize) {
-      header.getResizerProps = userProps => {
-        return mergeProps(
-          {
-            onMouseDown: e => e.persist() || onMouseDown(e, header),
-            style: {
-              cursor: 'ew-resize',
-            },
-            draggable: false,
-          },
-          applyPropHooks(instance.hooks.getResizerProps, header, instance),
-          userProps
+      if (canResize) {
+        const resizerPropsFromHooks = applyPropHooks(
+          instance.hooks.getResizerProps,
+          header,
+          instance
         )
+        header.getResizerProps = userProps => {
+          return mergeProps(
+            {
+              onMouseDown: e => e.persist() || onMouseDown(e, header),
+              style: {
+                cursor: 'ew-resize',
+              },
+              draggable: false,
+            },
+            resizerPropsFromHooks,
+            userProps
+          )
+        }
       }
-    }
-  })
+    })(instance)
+  )
 
   return instance
 }
