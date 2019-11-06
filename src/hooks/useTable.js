@@ -30,7 +30,13 @@ export const defaultState = {}
 const defaultInitialState = {}
 const defaultColumnInstance = {}
 const defaultReducer = (old, newState) => newState
-const defaultGetSubRows = (row, index) => row.subRows || []
+const defaultGetSubRows = (row, index) => {
+  if (row !== null && row.subRows) {
+    return row.subRows
+  } else {
+    return []
+  }
+}
 const defaultGetRowID = (row, index) => index
 
 export const useTable = (props, ...plugins) => {

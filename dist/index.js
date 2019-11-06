@@ -525,7 +525,7 @@ var utils = Object.freeze({
     return t
   },
   defaultGetSubRows = function(e, t) {
-    return e.subRows || []
+    return null !== e && e.subRows ? e.subRows : []
   },
   defaultGetRowID = function(e, t) {
     return t

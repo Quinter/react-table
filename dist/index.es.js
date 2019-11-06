@@ -747,7 +747,11 @@ var defaultReducer = function defaultReducer(old, newState) {
 }
 
 var defaultGetSubRows = function defaultGetSubRows(row, index) {
-  return row.subRows || []
+  if (row !== null && row.subRows) {
+    return row.subRows
+  } else {
+    return []
+  }
 }
 
 var defaultGetRowID = function defaultGetRowID(row, index) {
